@@ -10,22 +10,22 @@ export const isWeb = Platform.OS === "web";
  */
 export function startWebSafeArea() {
   if (typeof document === "undefined") return;
-  if (document.getElementById("__runable_status_bar")) return;
+  if (document.getElementById("__daaraji_status_bar")) return;
 
   const style = document.createElement("style");
-  style.id = "__runable_safe_area";
+  style.id = "__daaraji_safe_area";
   style.textContent = [
     "#root>div:first-child{padding-top:54px!important}",
-    "#__runable_status_bar{position:fixed;top:0;left:0;right:0;height:64px;z-index:9999;pointer-events:none}",
-    "#__runable_di{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:129px;height:37px;background:#000;border-radius:100px}",
-    "#__runable_di::before{content:'';position:absolute;right:20px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;background:radial-gradient(farthest-corner at 20% 20%,#6074bf 0,transparent 40%),radial-gradient(farthest-corner at 80% 80%,#513785 0,#24555e 20%,transparent 50%)}",
+    "#__daaraji_status_bar{position:fixed;top:0;left:0;right:0;height:64px;z-index:9999;pointer-events:none}",
+    "#__daaraji_dynamic_island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:129px;height:37px;background:#000;border-radius:100px}",
+    "#__daaraji_dynamic_island::before{content:'';position:absolute;right:20px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;background:radial-gradient(farthest-corner at 20% 20%,#6074bf 0,transparent 40%),radial-gradient(farthest-corner at 80% 80%,#513785 0,#24555e 20%,transparent 50%)}",
   ].join("");
   document.head.appendChild(style);
 
   const bar = document.createElement("div");
-  bar.id = "__runable_status_bar";
+  bar.id = "__daaraji_status_bar";
   const di = document.createElement("div");
-  di.id = "__runable_di";
+  di.id = "__daaraji_dynamic_island";
   bar.appendChild(di);
   document.body.appendChild(bar);
 

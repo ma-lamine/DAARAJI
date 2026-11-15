@@ -1,28 +1,16 @@
 import { app, BrowserWindow } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createManagedDeepLinks } from "@runablehq/managed-auth/desktop/main";
 import { registerIpcHandlers } from "./ipc";
-
-// Fully editable Electron main process — own the window, lifecycle, menus, tray,
-// and IPC (starter handlers in ./ipc.ts). One platform call is enforced by
-// `bun run lint`: createManagedDeepLinks. It registers the app's
-// runable-<APPLICATION_ID> deep-link protocol, forwards deep links to the
-// renderer, and backs managed sign-in (skills/app/references/desktop.md).
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const isDev = process.env.NODE_ENV !== "production";
-const WEB_DEV_URL = process.env.WEBSITE_URL ?? "http://localhost:3000";
+const WEB_DEV_URL = process.env.WEBSITE_URL ?? "http://localhost:4200";
 const WEB_DIST = path.join(__dirname, "../web-dist");
 
 let win: BrowserWindow | null = null;
 const getWindow = () => win;
-
-const deepLinks = createManagedDeepLinks({
-  applicationId: process.env.APPLICATION_ID,
-  getWindow,
-});
 
 function createWindow() {
   win = new BrowserWindow({
@@ -57,14 +45,13 @@ app.on("activate", () => {
   }
 });
 
-// Windows/Linux deliver deep links as argv — of a second instance while the app
-// is running, of this instance on cold start. Keep one instance and forward both.
 if (app.requestSingleInstanceLock()) {
-  app.on("second-instance", (_event, argv) => deepLinks.handleArgv(argv));
-  app.whenReady().then(() => {
-    createWindow();
-    deepLinks.handleArgv(process.argv);
+  app.on("second-instance", () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.focus();
   });
+  app.whenReady().then(createWindow);
 } else {
   app.quit();
 }

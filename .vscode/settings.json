@@ -1,0 +1,9 @@
+{
+    "accessibility.signals.confetti": {
+        "sound": "off"
+    },
+    "accessibility.signals.voiceModeStarted": {
+        "sound": "off",
+        "announcement": "off"
+    }
+}

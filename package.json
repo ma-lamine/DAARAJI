@@ -1,5 +1,5 @@
 {
-  "name": "sandbox-app-template",
+  "name": "daaraji",
   "private": true,
   "packageManager": "bun@1.3.14",
   "workspaces": [
@@ -11,11 +11,12 @@
     "dev:mobile": "cd packages/mobile && bunx expo start --port $(bun --print \"require('../../__ports.cjs').mobile\")",
     "build": "turbo build",
     "build:web": "cd packages/web && bunx vite build",
+    "deploy": "cd packages/web && bun run deploy",
     "start": "pm2 startOrRestart ecosystem.config.cjs --update-env",
     "stop": "pm2 delete web-app 2>/dev/null || true",
     "kill:port": "bun run internal:kill-port",
-    "lint": "runkit lint",
-    "lint:fix": "runkit lint --fix",
+    "lint": "oxlint .",
+    "lint:fix": "oxlint --fix .",
     "typecheck": "turbo typecheck",
     "db:generate": "turbo db:generate",
     "db:migrate": "turbo db:migrate",
@@ -23,10 +24,10 @@
     "internal:kill-port": "lsof -t -i :$(bun --print \"require('./__ports.cjs').website\") | xargs kill -9"
   },
   "devDependencies": {
-    "@runablehq/runkit": "0.1.1",
     "@tursodatabase/api": "^1.9.2",
     "@types/bun": "1.3.14",
     "oxfmt": "0.54.0",
+    "oxlint": "1.69.0",
     "turbo": "2.9.18",
     "typescript": "7.0.1-rc"
   },

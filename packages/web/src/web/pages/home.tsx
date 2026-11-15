@@ -63,7 +63,7 @@ export default function Home() {
           </div>
           <div className="portrait-note">
             <BookOpen size={17} />
-            <span>Un accompagnement humain, à votre rythme.</span>
+            <span>Un accompagnement à votre rythme.</span>
           </div>
         </div>
       </section>

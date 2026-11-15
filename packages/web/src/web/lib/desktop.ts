@@ -2,7 +2,6 @@
 export interface ElectronAPI {
   platform: string;
 
-  // Dialog
   showOpenDialog: (opts: {
     title?: string;
     filters?: { name: string; extensions: string[] }[];
@@ -14,23 +13,13 @@ export interface ElectronAPI {
     filters?: { name: string; extensions: string[] }[];
   }) => Promise<string | null>;
 
-  // File system
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, data: string) => Promise<void>;
-
-  // Shell
   openExternal: (url: string) => Promise<void>;
-
-  // Notifications
   showNotification: (title: string, body: string) => Promise<void>;
-
-  // Window controls
   minimize: () => Promise<void>;
   maximize: () => Promise<void>;
   close: () => Promise<void>;
-
-  // Events
-  onDeepLink: (cb: (url: string) => void) => () => void;
 }
 
 declare global {

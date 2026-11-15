@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>FriendBlock</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 24px;
+        background: #f5f7fb;
+        color: #1f2937;
+      }
+
+      h1 {
+        margin-top: 0;
+      }
+
+      button {
+        padding: 12px 18px;
+        background-color: #3c79f8;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      button:hover {
+        background-color: #2e67e6;
+      }
+
+      #friendDiv {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .friend-card {
+        background: white;
+        border-radius: 12px;
+        padding: 12px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(31, 41, 55, 0.08);
+      }
+
+      .friend-card img {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 50%;
+        display: block;
+        margin: 0 auto 10px;
+        background: #e5e7eb;
+      }
+
+      .friend-name {
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+
+      .friend-email {
+        font-size: 12px;
+        color: #4b5563;
+        word-break: break-word;
+      }
+
+      .status {
+        margin-top: 12px;
+        color: #374151;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>FriendBlock</h1>
+    <button id="connectButton">FriendBlock Contacts</button>
+    <div id="status" class="status">Not connected yet.</div>
+    <div id="friendDiv"></div>
+
+    <script>
+      const connectButton = document.getElementById('connectButton');
+      const friendDiv = document.getElementById('friendDiv');
+      const statusEl = document.getElementById('status');
+
+      function renderFriends(connections) {
+        friendDiv.innerHTML = '';
+
+        if (!connections || connections.length === 0) {
+          friendDiv.innerHTML = '<p>No contacts found.</p>';
+          return;
+        }
+
+        connections.forEach((person) => {
+          const name = person.names?.[0]?.displayName || 'Unknown contact';
+          const email = person.emailAddresses?.[0]?.value || 'No email';
+          const photoUrl = person.photos?.[0]?.url;
+
+          const card = document.createElement('div');
+          card.className = 'friend-card';
+
+          const img = document.createElement('img');
+          img.src = photoUrl || 'https://via.placeholder.com/64?text=🙂';
+          img.alt = name;
+
+          const nameEl = document.createElement('div');
+          nameEl.className = 'friend-name';
+          nameEl.textContent = name;
+
+          const emailEl = document.createElement('div');
+          emailEl.className = 'friend-email';
+          emailEl.textContent = email;
+
+          card.appendChild(img);
+          card.appendChild(nameEl);
+          card.appendChild(emailEl);
+          friendDiv.appendChild(card);
+        });
+      }
+
+      function fetchPeople(token) {
+        fetch('https://people.googleapis.com/v1/people/me/connections?personFields=names,emailAddresses,photos&sortOrder=FIRST_NAME_ASCENDING&pageSize=10', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`People API error: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            renderFriends(data.connections || []);
+            statusEl.textContent = 'Connected to Google People API.';
+          })
+          .catch((error) => {
+            console.error(error);
+            statusEl.textContent = 'Unable to load contacts. Check your OAuth setup.';
+          });
+      }
+
+      connectButton.addEventListener('click', () => {
+        statusEl.textContent = 'Connecting to Google...';
+
+        chrome.identity.getAuthToken({ interactive: true, scopes: ['https://www.googleapis.com/auth/people.readonly'] }, function(token) {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError.message);
+            statusEl.textContent = 'Authentication failed.';
+            return;
+          }
+
+          if (!token) {
+            statusEl.textContent = 'No token received.';
+            return;
+          }
+
+          fetchPeople(token);
+        });
+      });
+    </script>
+  </body>
+</html>

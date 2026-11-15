@@ -2,7 +2,7 @@
   "expo": {
     "icon": "./assets/icon.png",
     "android": {
-      "package": "com.appId.runable",
+      "package": "com.daaraji.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
@@ -10,12 +10,10 @@
       "edgeToEdgeEnabled": true
     },
     "extra": {
-      "apiUrl": "https://daaraji-qd57rgk-preview-4200.runable.site/",
-      "applicationId": "daaraji-qd57rgk",
-      "runableAuthIssuer": "https://api.runable.com/api/auth"
+      "apiUrl": "http://localhost:4200"
     },
     "ios": {
-      "bundleIdentifier": "com.appId.runable",
+      "bundleIdentifier": "com.daaraji.app",
       "supportsTablet": true
     },
     "splash": {
@@ -23,10 +21,10 @@
       "resizeMode": "cover",
       "backgroundColor": "#ffffff"
     },
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Daaraji",
+    "slug": "daaraji",
     "version": "1.0.0",
-    "scheme": "runable-daaraji-qd57rgk",
+    "scheme": "daaraji",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,

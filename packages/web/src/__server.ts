@@ -1,4 +1,7 @@
-import app from "./api";
+import { createApi } from "./api";
+import { getLocalEnvironment } from "./api/env";
+
+const app = createApi(getLocalEnvironment());
 
 const port = Number(process.env.PORT ?? 3000);
 const distDir = `${import.meta.dirname}/../dist`;

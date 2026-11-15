@@ -1,27 +1,26 @@
 import type { RouterClient } from "@orpc/server";
 import { createApp } from "./__core/app";
 import { ping } from "./routes/ping";
-import { school } from './routes/school';
-import { auth } from './auth';
+import { createSchool } from "./routes/school";
+import { createAuth } from "./auth";
+import { createDatabase } from "./database/__client";
+import type { AppEnvironment } from "./env";
 
-// API features are oRPC procedures, one file per feature in ./routes/,
-// composed into this router — typed end-to-end via the clients
-// (web: src/web/lib/api.ts, mobile: lib/api.ts).
-// Keep each routes/ file under 500 lines (`bun run lint` enforces this);
-// split into more feature files as they grow.
-// Patterns and examples: skills/app/references/api.md
-export const router = {
-  ping,
-  school,
-};
+function createRouter(db: ReturnType<typeof createDatabase>, auth: ReturnType<typeof createAuth>) {
+  return {
+    ping,
+    school: createSchool(db, auth),
+  };
+}
 
-export type AppRouter = typeof router;
+export type AppRouter = ReturnType<typeof createRouter>;
 /** Typed client for the router — used by the web and mobile api clients. */
 export type AppRouterClient = RouterClient<AppRouter>;
 
-const app = createApp(router);
-app.on(['GET', 'POST'], '/api/auth/*', c => auth.handler(c.req.raw));
-// Rare plain-HTTP endpoints (webhooks, streaming, the Better Auth handler)
-// register here with full paths, e.g. app.post("/api/webhooks/example", ...)
-
-export default app;
+export function createApi(env: AppEnvironment) {
+  const db = createDatabase(env);
+  const auth = createAuth(env, db);
+  const app = createApp(createRouter(db, auth), env.WEBSITE_URL);
+  app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+  return app;
+}

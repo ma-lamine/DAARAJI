@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { authClient } from "../lib/auth";
 import {
   useAdmin,
@@ -9,6 +9,7 @@ import {
   useSetPassword,
 } from "../queries/school";
 import { PageIntro } from "../components/layout";
+import { getDesktopAPI } from "../lib/desktop";
 import type { SiteContent } from "../../shared/content";
 function ContentEditor({ content }: { content: SiteContent }) {
   const [draft, setDraft] = useState<SiteContent>(() => structuredClone(content));
@@ -336,23 +337,21 @@ function PasswordSetup() {
 }
 export default function Admin() {
   const { data: session, isPending } = authClient.useSession();
+  const desktopAPI = getDesktopAPI();
   const access = useAdmin(!!session);
   const content = useContent();
   const [tab, setTab] = useState("demandes");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    void authClient.managedAuth
-      .handleRedirect()
-      .catch(() => setError("Le retour de connexion n’a pas abouti. Veuillez réessayer."));
-  }, []);
   async function google() {
     setBusy(true);
     setError("");
     try {
-      const result = await authClient.managedAuth.signIn({ provider: "google" });
-      if (result.error && result.error.code !== "POPUP_CLOSED")
-        setError(result.error.message || "Connexion impossible.");
+      const result = await authClient.signIn.social({
+        provider: "google",
+        callbackURL: `${window.location.origin}/admin`,
+      });
+      if (result.error) setError(result.error.message || "Connexion impossible.");
     } catch {
       setError("Connexion impossible. Veuillez réessayer.");
     } finally {
@@ -394,9 +393,28 @@ export default function Admin() {
               Utilisez votre compte Google <strong>laminebarrandiaye1@gmail.com</strong> pour la
               première connexion. Aucun compte visiteur ne peut accéder aux demandes.
             </p>
-            <button className="button" disabled={busy} onClick={google}>
-              {busy ? "Connexion…" : "Se connecter avec Google"}
-            </button>
+            {desktopAPI ? (
+              <>
+                <p>
+                  La connexion Google s’effectue dans un navigateur. Connectez-vous sur le site,
+                  activez un mot de passe, puis revenez ici pour vous identifier.
+                </p>
+                <button
+                  className="button"
+                  onClick={() =>
+                    void desktopAPI
+                      .openExternal(`${window.location.origin}/admin`)
+                      .catch(() => setError("Impossible d’ouvrir le navigateur."))
+                  }
+                >
+                  Ouvrir le site dans le navigateur
+                </button>
+              </>
+            ) : (
+              <button className="button" disabled={busy} onClick={google}>
+                {busy ? "Connexion…" : "Se connecter avec Google"}
+              </button>
+            )}
             <details className="password-login">
               <summary>Connexion avec un mot de passe déjà activé</summary>
               <p className="small-note">

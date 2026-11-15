@@ -3,7 +3,8 @@
 		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
 		"target": "ES2022",
 		"lib": [
-			"ES2023"
+			"ES2023",
+			"DOM"
 		],
 		"module": "ESNext",
 		"skipLibCheck": true,
@@ -31,6 +32,7 @@
 	},
 	"include": [
 		"vite.config.ts",
+		"src/__worker.ts",
 		"src/__server.ts",
 		"src/server.ts"
 	]

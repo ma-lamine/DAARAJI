@@ -2,24 +2,15 @@ import { z } from "zod";
 import { ORPCError } from "@orpc/server";
 import { desc, eq } from "drizzle-orm";
 import { base } from "../__core/app";
-import { auth } from "../auth";
-import { db } from "../database";
 import { siteContent, inquiries } from "../database/schema";
 import { contentSchema, defaults } from "../../shared/content";
 
-const admin = base.use(async ({ context, next }) => {
-  const session = await auth.api.getSession({ headers: context.headers });
-  if (!session)
-    throw new ORPCError("UNAUTHORIZED", { message: "Connectez-vous pour accéder à cet espace." });
-  if (
-    session.user.email.toLowerCase() !== "laminebarrandiaye1@gmail.com" ||
-    !session.user.emailVerified
-  )
-    throw new ORPCError("FORBIDDEN", {
-      message: "Accès réservé à l’adresse vérifiée de l’enseignant.",
-    });
-  return next({ context: { user: session.user } });
-});
+import type { createAuth } from "../auth";
+import type { createDatabase } from "../database/__client";
+
+type Auth = ReturnType<typeof createAuth>;
+type Database = ReturnType<typeof createDatabase>;
+
 const text = z.string().trim().max(300);
 const inquirySchema = z
   .object({
@@ -71,58 +62,75 @@ const inquirySchema = z
       });
   });
 const recent = new Map<string, number>();
-export const school = {
-  setPassword: admin
-    .input(z.object({ password: z.string().min(12).max(128) }))
-    .handler(async ({ input, context }) => {
-      await auth.api.setPassword({
-        headers: context.headers,
-        body: { newPassword: input.password },
-      });
-      return { saved: true };
-    }),
-  content: base.handler(async () => {
-    const [row] = await db.select().from(siteContent).where(eq(siteContent.id, 1));
-    return row ? contentSchema.parse(JSON.parse(row.data)) : defaults;
-  }),
-  submit: base.input(inquirySchema).handler(async ({ input }) => {
-    if (input.website) throw new ORPCError("BAD_REQUEST");
-    const key = input.email.toLowerCase();
-    const now = Date.now();
-    for (const [k, time] of recent) if (now - time > 60000) recent.delete(k);
-    if (recent.has(key))
-      throw new ORPCError("TOO_MANY_REQUESTS", {
-        message: "Patientez une minute avant une nouvelle demande.",
-      });
-    recent.set(key, now);
-    try {
-      const { consent: _consent, website: _website, ...data } = input;
-      const id = crypto.randomUUID();
-      await db.insert(inquiries).values({ ...data, id, createdAt: new Date().toISOString() });
-      return { id };
-    } catch (error) {
-      recent.delete(key);
-      throw error;
-    }
-  }),
-  admin: admin.handler(({ context }) => ({ email: context.user.email })),
-  requests: admin.handler(() => db.select().from(inquiries).orderBy(desc(inquiries.createdAt))),
-  save: admin.input(contentSchema).handler(async ({ input }) => {
-    await db
-      .insert(siteContent)
-      .values({ id: 1, data: JSON.stringify(input) })
-      .onConflictDoUpdate({ target: siteContent.id, set: { data: JSON.stringify(input) } });
-    return { saved: true };
-  }),
-  status: admin
-    .input(
-      z.object({
-        id: z.string().uuid(),
-        status: z.enum(["Nouveau", "Contacté", "Inscrit", "Archivé"]),
-      }),
+
+export function createSchool(db: Database, auth: Auth) {
+  const admin = base.use(async ({ context, next }) => {
+    const session = await auth.api.getSession({ headers: context.headers });
+    if (!session)
+      throw new ORPCError("UNAUTHORIZED", { message: "Connectez-vous pour accéder à cet espace." });
+    if (
+      session.user.email.toLowerCase() !== "laminebarrandiaye1@gmail.com" ||
+      !session.user.emailVerified
     )
-    .handler(async ({ input }) => {
-      await db.update(inquiries).set({ status: input.status }).where(eq(inquiries.id, input.id));
+      throw new ORPCError("FORBIDDEN", {
+        message: "Accès réservé à l’adresse vérifiée de l’enseignant.",
+      });
+    return next({ context: { user: session.user } });
+  });
+
+  return {
+    setPassword: admin
+      .input(z.object({ password: z.string().min(12).max(128) }))
+      .handler(async ({ input, context }) => {
+        await auth.api.setPassword({
+          headers: context.headers,
+          body: { newPassword: input.password },
+        });
+        return { saved: true };
+      }),
+    content: base.handler(async () => {
+      const [row] = await db.select().from(siteContent).where(eq(siteContent.id, 1));
+      return row ? contentSchema.parse(JSON.parse(row.data)) : defaults;
+    }),
+    submit: base.input(inquirySchema).handler(async ({ input }) => {
+      if (input.website) throw new ORPCError("BAD_REQUEST");
+      const key = input.email.toLowerCase();
+      const now = Date.now();
+      for (const [k, time] of recent) if (now - time > 60000) recent.delete(k);
+      if (recent.has(key))
+        throw new ORPCError("TOO_MANY_REQUESTS", {
+          message: "Patientez une minute avant une nouvelle demande.",
+        });
+      recent.set(key, now);
+      try {
+        const { consent: _consent, website: _website, ...data } = input;
+        const id = crypto.randomUUID();
+        await db.insert(inquiries).values({ ...data, id, createdAt: new Date().toISOString() });
+        return { id };
+      } catch (error) {
+        recent.delete(key);
+        throw error;
+      }
+    }),
+    admin: admin.handler(({ context }) => ({ email: context.user.email })),
+    requests: admin.handler(() => db.select().from(inquiries).orderBy(desc(inquiries.createdAt))),
+    save: admin.input(contentSchema).handler(async ({ input }) => {
+      await db
+        .insert(siteContent)
+        .values({ id: 1, data: JSON.stringify(input) })
+        .onConflictDoUpdate({ target: siteContent.id, set: { data: JSON.stringify(input) } });
       return { saved: true };
     }),
-};
+    status: admin
+      .input(
+        z.object({
+          id: z.string().uuid(),
+          status: z.enum(["Nouveau", "Contacté", "Inscrit", "Archivé"]),
+        }),
+      )
+      .handler(async ({ input }) => {
+        await db.update(inquiries).set({ status: input.status }).where(eq(inquiries.id, input.id));
+        return { saved: true };
+      }),
+  };
+}
